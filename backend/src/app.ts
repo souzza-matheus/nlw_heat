@@ -7,7 +7,7 @@ import cors from 'cors';
 import { router } from "./routes";
 
 const app = express();
-app.use(cors);
+app.use(cors());
 const serverHttp = http.createServer(app);
 const io = new Server(serverHttp,{
     cors:{

@@ -1,6 +1,48 @@
+import { useEffect, useState } from 'react';
+import io from 'socket.io-client'
+import { api } from '../../services/api'
+
 import styles from './styles.module.scss';
 
+type Message = {
+  id: string;
+  text: string;
+  user: {
+    name: string;
+    avatar_url: string;
+  }
+}
+
+const messagesQueue: Message[] = [];
+
+const socket = io('http://localhost:4000');
+
+socket.on('new_message', (newMessage: Message) => {
+  messagesQueue.push(newMessage);
+})
+
 export function MessageList() {
+  const [messages, setMessages] = useState<Message[]>([])
+
+  useEffect(() => {
+    setInterval(() => {
+      if (messagesQueue.length > 0) {
+        setMessages(prevState => [
+          messagesQueue[0],
+          prevState[0],
+          prevState[1],
+        ].filter(Boolean))
+
+        messagesQueue.shift()
+      }
+    }, 3000)
+  }, [])
+
+  useEffect(() => {
+    api.get<Message[]>('/messages/last3').then(response => {
+      setMessages(response.data)
+    })
+  }, [])
 
   return (
     <div className={styles.messageListWrapper}>
@@ -22,33 +64,19 @@ export function MessageList() {
       </svg>
 
       <ul className={styles.messageList}>
-            <li  className={styles.message}>
-              <p className={styles.messageContent}>Animadocom o doWile</p>
+        {messages.map(message => {
+          return (
+            <li key={message.id} className={styles.message}>
+              <p className={styles.messageContent}>{message.text}</p>
               <div className={styles.messageUser}>
                 <div className={styles.userImage}>
-                <img src="https://avatars.githubusercontent.com/u/77996078?s=400&u=f4bc8d0df5cc217ea65c7abbd661bb3bece33c10&v=4" alt="souzza-matheus" />
+                  <img src={message.user.avatar_url} alt={message.user.name} />
                 </div>
-                <span>souzza-matheus</span>
+                <span>{message.user.name}</span>
               </div>
             </li>
-            <li  className={styles.message}>
-              <p className={styles.messageContent}>Animadocom o doWile</p>
-              <div className={styles.messageUser}>
-                <div className={styles.userImage}>
-                <img src="https://avatars.githubusercontent.com/u/77996078?s=400&u=f4bc8d0df5cc217ea65c7abbd661bb3bece33c10&v=4" alt="souzza-matheus" />
-                </div>
-                <span>souzza-matheus</span>
-              </div>
-            </li>
-            <li  className={styles.message}>
-              <p className={styles.messageContent}>Animadocom o doWile</p>
-              <div className={styles.messageUser}>
-                <div className={styles.userImage}>
-                <img src="https://avatars.githubusercontent.com/u/77996078?s=400&u=f4bc8d0df5cc217ea65c7abbd661bb3bece33c10&v=4" alt="souzza-matheus" />
-                </div>
-                <span>souzza-matheus</span>
-              </div>
-            </li>
+          );
+        })}
       </ul>
     </div>
   )
